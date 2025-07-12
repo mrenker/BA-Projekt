@@ -28,10 +28,10 @@ jobs:
       run: ls -la
 
     - name: Build the Docker image
-      run: cd BA-RAG && docker build . --file Dockerfile --tag renker.azurecr.io/ba-rag:$(date +%s) --tag renker.azurecr.io/ba-rag:latest
+      run: cd BA-RAG && docker build . --file Dockerfile --tag renker.azurecr.io/ba-rag:$(date +%s) --tag renker.azurecr.io/ba-rag:latest --push
 
     - name: Build the Docker image
-      run: cd BA-Chat && docker build . --file Dockerfile --tag renker.azurecr.io/ba-chat:$(date +%s) --tag renker.azurecr.io/ba-chat:latest
+      run: cd BA-Chat && docker build . --file Dockerfile --tag renker.azurecr.io/ba-chat:$(date +%s) --tag renker.azurecr.io/ba-chat:latest --push
 
     - name: Watermelon HTTP client
       uses: CamiloGarciaLaRotta/watermelon-http-client@v1.7
