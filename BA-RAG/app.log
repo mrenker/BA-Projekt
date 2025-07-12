@@ -1,0 +1,39 @@
+2025-05-24 11:34:10,097 - __main__ - INFO - Starting GraphQL to ChromaDB pipeline...
+2025-05-24 11:34:10,097 - __main__ - ERROR - Application failed: GRAPHQL_ENDPOINT environment variable is required
+2025-05-24 11:56:38,057 - main - INFO - Introspecting GraphQL schema...
+2025-05-24 11:56:38,672 - main - INFO - Schema introspection completed successfully
+2025-05-24 11:56:38,672 - __main__ - ERROR - Schema exploration error: 'NoneType' object has no attribute 'get'
+2025-07-07 18:27:12,797 - __main__ - INFO - Starting GraphQL to ChromaDB pipeline...
+2025-07-07 18:27:12,797 - __main__ - INFO - EMBEDDING_MODEL: all-MiniLM-L6-v2
+2025-07-07 18:27:12,937 - httpx - INFO - HTTP Request: GET http://localhost:8000/api/v2/auth/identity "HTTP/1.1 200 OK"
+2025-07-07 18:27:12,946 - httpx - INFO - HTTP Request: GET http://localhost:8000/api/v2/tenants/default_tenant "HTTP/1.1 200 OK"
+2025-07-07 18:27:12,947 - httpx - INFO - HTTP Request: GET http://localhost:8000/api/v2/tenants/default_tenant/databases/default_database "HTTP/1.1 200 OK"
+2025-07-07 18:27:12,965 - __main__ - INFO - Initialized ChromaDB client with host: localhost, port: 8000, collection name: graphql_data
+2025-07-07 18:27:22,239 - sentence_transformers.SentenceTransformer - INFO - Load pretrained SentenceTransformer: all-MiniLM-L6-v2
+2025-07-07 18:27:25,118 - __main__ - INFO - Initialized ChromaDB client with embedding model: all-MiniLM-L6-v2
+2025-07-07 18:27:25,122 - httpx - INFO - HTTP Request: GET http://localhost:8000/api/v2/tenants/default_tenant/databases/default_database/collections/graphql_data "HTTP/1.1 404 Not Found"
+2025-07-07 18:27:25,176 - httpx - INFO - HTTP Request: POST http://localhost:8000/api/v2/tenants/default_tenant/databases/default_database/collections "HTTP/1.1 200 OK"
+2025-07-07 18:27:25,176 - __main__ - INFO - Created new collection: graphql_data
+2025-07-07 18:27:25,176 - __main__ - INFO - Initialized pipeline with GraphQL endpoint: http://localhost:4000/graphql
+2025-07-07 18:27:25,176 - __main__ - INFO - ChromaDB: localhost:8000/graphql_data
+2025-07-07 18:27:25,176 - __main__ - INFO - Testing GraphQL endpoint connectivity: http://localhost:4000/graphql
+2025-07-07 18:27:25,177 - __main__ - INFO - Executing GraphQL query to: http://localhost:4000/graphql
+2025-07-07 18:27:29,256 - __main__ - ERROR - Request failed: HTTPConnectionPool(host='localhost', port=4000): Max retries exceeded with url: /graphql (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002230AD14690>: Failed to establish a new connection: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte'))
+2025-07-07 18:27:29,324 - __main__ - ERROR - Please check:
+2025-07-07 18:27:29,324 - __main__ - ERROR - 1. The GraphQL endpoint URL is correct
+2025-07-07 18:27:29,324 - __main__ - ERROR - 2. The GraphQL service is running
+2025-07-07 18:27:29,324 - __main__ - ERROR - 3. Network connectivity to the endpoint
+2025-07-07 18:27:29,324 - __main__ - ERROR - 4. Authentication headers if required
+2025-07-07 18:27:29,324 - __main__ - ERROR - Application failed: GraphQL endpoint connectivity test failed: HTTPConnectionPool(host='localhost', port=4000): Max retries exceeded with url: /graphql (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002230AD14690>: Failed to establish a new connection: [WinError 10061] Es konnte keine Verbindung hergestellt werden, da der Zielcomputer die Verbindung verweigerte'))
+2025-07-07 18:27:29,325 - __main__ - ERROR - 
+2025-07-07 18:27:29,329 - __main__ - ERROR - 1. Create a .env file from env.example:
+2025-07-07 18:27:29,329 - __main__ - ERROR -    cp env.example .env
+2025-07-07 18:27:29,329 - __main__ - ERROR - 2. Edit .env file and set GRAPHQL_ENDPOINT to your actual GraphQL API URL
+2025-07-07 18:27:29,329 - __main__ - ERROR - 3. If using Docker, make sure the GraphQL service is accessible from the container
+2025-07-07 18:27:29,329 - __main__ - ERROR - 4. Check if authentication headers are required and set GRAPHQL_HEADERS
+2025-07-07 18:27:29,329 - __main__ - ERROR - 
+2025-07-07 18:27:29,329 - __main__ - ERROR - Example .env configuration:
+2025-07-07 18:27:29,329 - __main__ - ERROR - GRAPHQL_ENDPOINT=https://your-api.com/graphql
+2025-07-07 18:27:29,330 - __main__ - ERROR - GRAPHQL_HEADERS={"Authorization": "Bearer your-token"}
+2025-07-07 18:27:29,330 - __main__ - ERROR - CHROMADB_HOST=chroma
+2025-07-07 18:27:29,330 - __main__ - ERROR - CHROMADB_PORT=8000

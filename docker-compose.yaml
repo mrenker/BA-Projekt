@@ -1,0 +1,73 @@
+services:
+  chroma:
+    image: chromadb/chroma
+    volumes:
+      - chroma_data:/data
+    ports:
+      - "8000:8000"
+    
+  graphql-chromadb-pipeline:
+    build:
+      context: ./BA-RAG/
+      dockerfile: Dockerfile
+    container_name: graphql-chromadb-pipeline
+    restart: unless-stopped
+    environment:
+      # Required: GraphQL Configuration
+      - GRAPHQL_ENDPOINT=https://wuerzburg-mitmachen.de/graphql
+      
+      # Required: ChromaDB Configuration
+      - CHROMADB_HOST=chroma
+      - CHROMADB_PORT=8000
+      - CHROMADB_COLLECTION=graphql_data
+      
+      # Optional: Application Configuration
+      - EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+      - SYNC_INTERVAL_SECONDS=300
+      - BATCH_SIZE=100
+      - RUN_MODE=continuous
+      - HEALTH_CHECK_ENABLED=false
+      
+      # Logging Configuration
+      - PYTHONUNBUFFERED=1
+      - PYTHONIOENCODING=utf-8
+      
+    volumes:
+      - graphql_pipeline_cache:/app/cache
+
+  chatbot:
+    build: ./BA-Chat/
+    container_name: rag_chatbot
+    ports:
+      - "8080:8080"
+    environment:
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - MODEL_NAME=${MODEL_NAME:-gpt-4.1}
+      
+      # ChromaDB Configuration
+      - CHROMA_HOST=chroma
+      - CHROMA_PORT=8000
+      - COLLECTION_NAME=graphql_data
+      
+      # Application Configuration
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      
+      # Verification Configuration
+      - ENABLE_VERIFICATION=${ENABLE_VERIFICATION:-true}
+      - VERIFICATION_BASE_URL=${VERIFICATION_BASE_URL:-http://10.0.9.45:11434/v1}
+      - VERIFICATION_MODEL=${VERIFICATION_MODEL:-bespoke-minicheck:latest}
+      - VERIFICATION_API_KEY=${VERIFICATION_API_KEY:-dummy}
+      - MAX_REGENERATION_ATTEMPTS=${MAX_REGENERATION_ATTEMPTS:-3}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  chroma_data:
+  graphql_pipeline_cache:
+
