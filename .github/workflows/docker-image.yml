@@ -24,6 +24,9 @@ jobs:
         # Container registry server url
         login-server: https://renker.azurecr.io
         
+    - name: List Directory
+      run: ls -la
+
     - name: Build the Docker image
       run: docker build BA-RAG --file Dockerfile --tag renker.azurecr.io/ba-rag:$(date +%s) --tag renker.azurecr.io/ba-rag:latest
 
