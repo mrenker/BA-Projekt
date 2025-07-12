@@ -464,6 +464,16 @@ class DataPipeline:
             self.chromadb_manager.upsert_documents(documents, metadatas, ids)
             
             logger.info(f"Successfully synced {len(data)} items to ChromaDB")
+
+            # Read string from file
+            grounding_file = os.getenv('GROUNDING_FILE', 'grounding.txt')
+            if os.path.exists(grounding_file):
+                with open(grounding_file, 'r') as f:
+                    grounding = [f.read()]
+                    grounding_ids = ["grounding_1"]
+
+                    self.chromadb_manager.upsert_documents(grounding, [{'source': 'grounding'}], grounding_ids)
+                    logger.info(f"Loaded grounding from {grounding_file}")
             
         except Exception as e:
             logger.error(f"Data sync failed: {e}")

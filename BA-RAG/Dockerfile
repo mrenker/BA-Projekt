@@ -43,6 +43,7 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 # Copy application code
 COPY main.py .
 COPY health_check.py .
+COPY grounding.txt .
 
 # Change ownership of all files to appuser
 RUN chown -R appuser:appuser /app

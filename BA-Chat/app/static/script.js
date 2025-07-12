@@ -6,7 +6,6 @@ class RAGChatbotUI {
         this.chatMessages = document.getElementById('chatMessages');
         this.messageInput = document.getElementById('messageInput');
         this.chatForm = document.getElementById('chatForm');
-        this.documentForm = document.getElementById('documentForm');
         this.typingIndicator = document.getElementById('typingIndicator');
         this.modelSelect = document.getElementById('modelSelect');
         
@@ -22,12 +21,6 @@ class RAGChatbotUI {
         this.chatForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.sendMessage();
-        });
-
-        // Document form submission
-        this.documentForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addDocument();
         });
 
         // Clear chat button
@@ -217,62 +210,6 @@ class RAGChatbotUI {
                 </div>
             </div>
         `;
-    }
-
-    async addDocument() {
-        const content = document.getElementById('documentContent').value.trim();
-        const source = document.getElementById('documentSource').value.trim();
-        const topic = document.getElementById('documentTopic').value.trim();
-
-        if (!content) {
-            this.showToast('Please enter document content', 'warning');
-            return;
-        }
-
-        const submitButton = document.querySelector('#documentForm button[type="submit"]');
-        const originalText = submitButton.innerHTML;
-        submitButton.classList.add('btn-loading');
-        submitButton.disabled = true;
-
-        try {
-            const document = {
-                content: content,
-                metadata: {}
-            };
-
-            if (source) document.metadata.source = source;
-            if (topic) document.metadata.topic = topic;
-
-            const response = await fetch(`${this.apiBase}/documents`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify([document])
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            this.showToast(data.message, 'success');
-            
-            // Clear form
-            document.getElementById('documentContent').value = '';
-            document.getElementById('documentSource').value = '';
-            document.getElementById('documentTopic').value = '';
-
-            // Update document count
-            this.updateDocumentCount();
-
-        } catch (error) {
-            this.showToast(`Error adding document: ${error.message}`, 'error');
-        } finally {
-            submitButton.classList.remove('btn-loading');
-            submitButton.disabled = false;
-            submitButton.innerHTML = originalText;
-        }
     }
 
     async updateSystemStatus() {
