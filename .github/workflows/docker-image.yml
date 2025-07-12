@@ -1,0 +1,39 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Azure Container Registry Login
+      uses: Azure/docker-login@v1
+      with:
+        # Container registry username
+        username: renker
+        # Container registry password
+        password: ${{ secrets.ACR_PASSWORD }}
+        # Container registry server url
+        login-server: https://renker.azurecr.io
+        
+    - name: Build the Docker image
+      run: docker build ./BA-RAG --file Dockerfile --tag renker.azurecr.io/ba-rag:$(date +%s) --tag renker.azurecr.io/ba-rag:latest
+
+    - name: Build the Docker image
+      run: docker build ./BA-Chat --file Dockerfile --tag renker.azurecr.io/ba-chat:$(date +%s) --tag renker.azurecr.io/ba-chat:latest
+
+    - name: Watermelon HTTP client
+      uses: CamiloGarciaLaRotta/watermelon-http-client@v1.7
+      with:
+        # Endpoint to query
+        url: ${{ secrets.PORTAINER_WEBHOOK }}
+        # HTTP method
+        method: POST
