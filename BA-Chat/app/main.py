@@ -12,6 +12,8 @@ from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
 from dotenv import load_dotenv
 import httpx 
 
@@ -135,6 +137,15 @@ class RAGChatbot:
             chain_type="stuff",
             retriever=self.vector_store.as_retriever(search_kwargs={"k": 4}),
             return_source_documents=True
+        )
+
+        self.qa_chain = (
+            {
+                "context": self.vector_store.as_retriever(),
+                "question": RunnablePassthrough(),
+            }
+            | self.llm
+            | StrOutputParser()
         )
         
         logger.info("RAG Chatbot initialized successfully")
