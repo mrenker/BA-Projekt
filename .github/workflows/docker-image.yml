@@ -25,10 +25,10 @@ jobs:
         login-server: https://renker.azurecr.io
         
     - name: Build the Docker image
-      run: docker build ./BA-RAG --file Dockerfile --tag renker.azurecr.io/ba-rag:$(date +%s) --tag renker.azurecr.io/ba-rag:latest
+      run: docker build BA-RAG --file Dockerfile --tag renker.azurecr.io/ba-rag:$(date +%s) --tag renker.azurecr.io/ba-rag:latest
 
     - name: Build the Docker image
-      run: docker build ./BA-Chat --file Dockerfile --tag renker.azurecr.io/ba-chat:$(date +%s) --tag renker.azurecr.io/ba-chat:latest
+      run: docker build BA-Chat --file Dockerfile --tag renker.azurecr.io/ba-chat:$(date +%s) --tag renker.azurecr.io/ba-chat:latest
 
     - name: Watermelon HTTP client
       uses: CamiloGarciaLaRotta/watermelon-http-client@v1.7

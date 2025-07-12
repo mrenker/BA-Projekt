@@ -7,9 +7,7 @@ services:
       - "8000:8000"
     
   graphql-chromadb-pipeline:
-    build:
-      context: ./BA-RAG/
-      dockerfile: Dockerfile
+    image: renker.azurecr.io/ba-rag:latest
     container_name: graphql-chromadb-pipeline
     restart: unless-stopped
     environment:
@@ -36,7 +34,7 @@ services:
       - graphql_pipeline_cache:/app/cache
 
   chatbot:
-    build: ./BA-Chat/
+    image: renker.azurecr.io/ba-chat:latest
     container_name: rag_chatbot
     ports:
       - "8080:8080"
