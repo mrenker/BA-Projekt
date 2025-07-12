@@ -34,6 +34,8 @@ services:
   chatbot:
     image: ghcr.io/mrenker/ba-chat:latest
     container_name: rag_chatbot
+    ports:
+      - "8321:8080"
     environment:
       # OpenAI Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy}
