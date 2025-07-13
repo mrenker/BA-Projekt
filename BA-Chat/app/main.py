@@ -307,14 +307,14 @@ Claim: {claim}"""
                 
                 # Generate response using the combined context
                 if context:
-                    prompt = f"""Based on the following information, please answer the question. If the information is not sufficient, say so.
+                    prompt = f"""Basierend auf den folgenden Informationen, beantworte bitte die Frage. Falls die Informationen nicht ausreichen, gib dies an.
 
 Context:
 {context}
 
-Question: {message}
+Frage: {message}
 
-Answer:"""
+Antwort:"""
                     
                     response = current_llm.predict(prompt)
                 else:
