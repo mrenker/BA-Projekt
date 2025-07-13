@@ -199,10 +199,10 @@ The system uses bespoke-minicheck to verify that generated responses are consist
 
 ## Web Search Integration
 
-The system integrates Tavily Search API to enhance responses with real-time web information. Here's how it works:
+The system integrates Tavily Search API through LangChain's TavilySearchResults tool to enhance responses with real-time web information. Here's how it works:
 
 1. **Query Processing**: When a user asks a question, the system searches both the knowledge base and the web
-2. **Web Search**: Uses Tavily Search API to find relevant web content
+2. **Web Search**: Uses LangChain's TavilySearchResults tool to find relevant web content
 3. **Context Combination**: Combines knowledge base results with web search results
 4. **Response Generation**: Generates a response using both sources of information
 5. **Source Attribution**: Clearly indicates which sources are from the knowledge base vs web search
@@ -214,6 +214,7 @@ The system integrates Tavily Search API to enhance responses with real-time web 
 - **Source Transparency**: Clear distinction between knowledge base and web sources
 - **Configurable Search**: Control search depth, result count, and domain filtering
 - **Optional Integration**: Can be enabled/disabled via environment variables
+- **LangChain Integration**: Uses LangChain's TavilySearchResults tool for seamless integration
 
 ### Search Configuration
 
@@ -221,6 +222,32 @@ The system integrates Tavily Search API to enhance responses with real-time web 
 - **Result Count**: Control how many web results to include (default: 5)
 - **Domain Filtering**: Include or exclude specific domains for targeted results
 - **API Key Management**: Secure API key configuration via environment variables
+
+### LangChain Integration
+
+The system uses LangChain's `TavilySearchResults` tool for web search integration:
+
+```python
+from langchain_community.tools import TavilySearchResults
+
+# Initialize the search tool
+tavily_tool = TavilySearchResults(
+    api_key="your_tavily_api_key",
+    max_results=5,
+    search_depth="basic",
+    include_domains=["example.com"],
+    exclude_domains=["spam.com"]
+)
+
+# Use the tool
+results = tavily_tool.invoke("your search query")
+```
+
+This integration provides:
+- **Seamless LangChain compatibility** with existing RAG pipeline
+- **Automatic result formatting** as LangChain Documents
+- **Consistent API** with other LangChain tools
+- **Easy configuration** through environment variables
 
 ## API Endpoints
 

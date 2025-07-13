@@ -14,9 +14,9 @@ from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
+from langchain_community.tools import TavilySearchResults
 from dotenv import load_dotenv
 import httpx
-from tavily import TavilyClient
 
 # Load environment variables
 load_dotenv()
@@ -125,16 +125,22 @@ class RAGChatbot:
             self.verification_llm = None
             logger.info("Verification disabled")
         
-        # Initialize Tavily client if enabled
+        # Initialize Tavily search tool if enabled
         if self.enable_tavily_search:
             if not self.tavily_api_key:
                 logger.warning("Tavily search enabled but TAVILY_API_KEY not provided. Disabling Tavily search.")
                 self.enable_tavily_search = False
             else:
-                self.tavily_client = TavilyClient(api_key=self.tavily_api_key)
+                self.tavily_search_tool = TavilySearchResults(
+                    api_key=self.tavily_api_key,
+                    max_results=self.tavily_max_results,
+                    search_depth=self.tavily_search_depth,
+                    include_domains=self.tavily_include_domains if self.tavily_include_domains else None,
+                    exclude_domains=self.tavily_exclude_domains if self.tavily_exclude_domains else None
+                )
                 logger.info(f"Tavily search enabled with depth: {self.tavily_search_depth}, max results: {self.tavily_max_results}")
         else:
-            self.tavily_client = None
+            self.tavily_search_tool = None
             logger.info("Tavily search disabled")
         
         # Initialize or get collection (don't create if it doesn't exist)
@@ -173,31 +179,18 @@ class RAGChatbot:
     
     def search_tavily(self, query: str) -> List[Document]:
         """Perform web search using Tavily and return results as LangChain Documents"""
-        if not self.enable_tavily_search or not self.tavily_client:
+        if not self.enable_tavily_search or not self.tavily_search_tool:
             return []
         
         try:
             logger.info(f"Performing Tavily search for: {query}")
             
-            # Prepare search parameters
-            search_params = {
-                "query": query,
-                "search_depth": self.tavily_search_depth,
-                "max_results": self.tavily_max_results,
-            }
-            
-            # Add domain filters if specified
-            if self.tavily_include_domains:
-                search_params["include_domains"] = self.tavily_include_domains
-            if self.tavily_exclude_domains:
-                search_params["exclude_domains"] = self.tavily_exclude_domains
-            
-            # Perform search
-            search_result = self.tavily_client.search(**search_params)
+            # Use LangChain's TavilySearchResults tool
+            search_results = self.tavily_search_tool.invoke(query)
             
             # Convert results to LangChain Documents
             documents = []
-            for result in search_result.get("results", []):
+            for result in search_results:
                 content = f"Title: {result.get('title', '')}\nURL: {result.get('url', '')}\nContent: {result.get('content', '')}"
                 metadata = {
                     "source": "tavily_search",
