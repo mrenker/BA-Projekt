@@ -56,6 +56,14 @@ services:
       - VERIFICATION_MODEL=${VERIFICATION_MODEL:-bespoke-minicheck:latest}
       - VERIFICATION_API_KEY=${VERIFICATION_API_KEY:-dummy}
       - MAX_REGENERATION_ATTEMPTS=${MAX_REGENERATION_ATTEMPTS:-3}
+      
+      # Tavily Search Configuration
+      - ENABLE_TAVILY_SEARCH=${ENABLE_TAVILY_SEARCH:-false}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - TAVILY_SEARCH_DEPTH=${TAVILY_SEARCH_DEPTH:-basic}
+      - TAVILY_MAX_RESULTS=${TAVILY_MAX_RESULTS:-5}
+      - TAVILY_INCLUDE_DOMAINS=${TAVILY_INCLUDE_DOMAINS:-}
+      - TAVILY_EXCLUDE_DOMAINS=${TAVILY_EXCLUDE_DOMAINS:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]

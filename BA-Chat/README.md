@@ -9,6 +9,7 @@ A dockerized Python-based chatbot that uses ChromaDB as a RAG (Retrieval-Augment
 - ✅ **Response verification** using bespoke-minicheck model
 - 🔄 **Automatic regeneration** when verification fails
 - 🌐 **OpenAI-compatible API support** (OpenAI, Azure OpenAI, local models like Ollama)
+- 🔍 **Web search integration** using Tavily Search API
 - 🐳 **Fully dockerized** with docker-compose orchestration
 - 🌟 **Modern Web UI** with real-time chat and system monitoring
 - 📄 **Document ingestion** with automatic text chunking and embedding
@@ -30,6 +31,12 @@ A dockerized Python-based chatbot that uses ChromaDB as a RAG (Retrieval-Augment
                        │ OpenAI-Compatible│    │ bespoke-minicheck│
                        │   LLM Provider   │    │   Verification   │
                        └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                       ┌─────────────────┐
+                       │   Tavily Search │
+                       │   API (Web)     │
+                       └─────────────────┘
 ```
 
 ## Quick Start
@@ -149,6 +156,17 @@ A dockerized Python-based chatbot that uses ChromaDB as a RAG (Retrieval-Augment
 | `VERIFICATION_API_KEY` | API key for verification model | `dummy` | `your_api_key` |
 | `MAX_REGENERATION_ATTEMPTS` | Max attempts to regenerate response | `3` | `5` |
 
+### Tavily Search Variables
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `ENABLE_TAVILY_SEARCH` | Enable/disable web search integration | `false` | `true` |
+| `TAVILY_API_KEY` | Your Tavily Search API key | `None` | `tvly-...` |
+| `TAVILY_SEARCH_DEPTH` | Search depth: `basic` or `advanced` | `basic` | `advanced` |
+| `TAVILY_MAX_RESULTS` | Maximum number of search results | `5` | `10` |
+| `TAVILY_INCLUDE_DOMAINS` | Comma-separated domains to include | `None` | `example.com,wikipedia.org` |
+| `TAVILY_EXCLUDE_DOMAINS` | Comma-separated domains to exclude | `None` | `spam.com,ads.com` |
+
 ### OpenAI-Compatible APIs
 
 The chatbot supports various OpenAI-compatible APIs:
@@ -178,6 +196,31 @@ The system uses bespoke-minicheck to verify that generated responses are consist
 - **Reliability**: Reduces hallucinations and incorrect information
 - **Transparency**: Shows verification status in response metadata
 - **Configurable**: Can be disabled or customized per use case
+
+## Web Search Integration
+
+The system integrates Tavily Search API to enhance responses with real-time web information. Here's how it works:
+
+1. **Query Processing**: When a user asks a question, the system searches both the knowledge base and the web
+2. **Web Search**: Uses Tavily Search API to find relevant web content
+3. **Context Combination**: Combines knowledge base results with web search results
+4. **Response Generation**: Generates a response using both sources of information
+5. **Source Attribution**: Clearly indicates which sources are from the knowledge base vs web search
+
+### Web Search Benefits
+
+- **Real-time Information**: Access to current events and latest information
+- **Comprehensive Coverage**: Combines internal knowledge with external web data
+- **Source Transparency**: Clear distinction between knowledge base and web sources
+- **Configurable Search**: Control search depth, result count, and domain filtering
+- **Optional Integration**: Can be enabled/disabled via environment variables
+
+### Search Configuration
+
+- **Search Depth**: Choose between `basic` (faster) or `advanced` (more comprehensive)
+- **Result Count**: Control how many web results to include (default: 5)
+- **Domain Filtering**: Include or exclude specific domains for targeted results
+- **API Key Management**: Secure API key configuration via environment variables
 
 ## API Endpoints
 
@@ -256,6 +299,23 @@ Get the current verification configuration.
   "verification_model": "bespoke-minicheck:latest",
   "verification_base_url": "http://localhost:11434/v1",
   "max_regeneration_attempts": 3
+}
+```
+
+#### Tavily Search Status
+```http
+GET /tavily/status
+```
+Get the current Tavily search configuration.
+
+**Response:**
+```json
+{
+  "tavily_search_enabled": true,
+  "tavily_search_depth": "basic",
+  "tavily_max_results": 5,
+  "tavily_include_domains": ["example.com", "wikipedia.org"],
+  "tavily_exclude_domains": ["spam.com"]
 }
 ```
 

@@ -15,7 +15,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from dotenv import load_dotenv
-import httpx 
+import httpx
+from tavily import TavilyClient
 
 # Load environment variables
 load_dotenv()
@@ -78,6 +79,14 @@ class RAGChatbot:
         self.verification_api_key = os.getenv("VERIFICATION_API_KEY", "dummy")
         self.max_regeneration_attempts = int(os.getenv("MAX_REGENERATION_ATTEMPTS", "3"))
         
+        # Tavily search settings
+        self.enable_tavily_search = os.getenv("ENABLE_TAVILY_SEARCH", "false").lower() == "true"
+        self.tavily_api_key = os.getenv("TAVILY_API_KEY")
+        self.tavily_search_depth = os.getenv("TAVILY_SEARCH_DEPTH", "basic")
+        self.tavily_max_results = int(os.getenv("TAVILY_MAX_RESULTS", "5"))
+        self.tavily_include_domains = os.getenv("TAVILY_INCLUDE_DOMAINS", "").split(",") if os.getenv("TAVILY_INCLUDE_DOMAINS") else []
+        self.tavily_exclude_domains = os.getenv("TAVILY_EXCLUDE_DOMAINS", "").split(",") if os.getenv("TAVILY_EXCLUDE_DOMAINS") else []
+        
         if not self.openai_api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
         
@@ -116,6 +125,18 @@ class RAGChatbot:
             self.verification_llm = None
             logger.info("Verification disabled")
         
+        # Initialize Tavily client if enabled
+        if self.enable_tavily_search:
+            if not self.tavily_api_key:
+                logger.warning("Tavily search enabled but TAVILY_API_KEY not provided. Disabling Tavily search.")
+                self.enable_tavily_search = False
+            else:
+                self.tavily_client = TavilyClient(api_key=self.tavily_api_key)
+                logger.info(f"Tavily search enabled with depth: {self.tavily_search_depth}, max results: {self.tavily_max_results}")
+        else:
+            self.tavily_client = None
+            logger.info("Tavily search disabled")
+        
         # Initialize or get collection (don't create if it doesn't exist)
         try:
             self.collection = self.chroma_client.get_collection(name=self.collection_name, embedding_function=self.chromadb_embeddings)
@@ -149,6 +170,50 @@ class RAGChatbot:
         )
         
         logger.info("RAG Chatbot initialized successfully")
+    
+    def search_tavily(self, query: str) -> List[Document]:
+        """Perform web search using Tavily and return results as LangChain Documents"""
+        if not self.enable_tavily_search or not self.tavily_client:
+            return []
+        
+        try:
+            logger.info(f"Performing Tavily search for: {query}")
+            
+            # Prepare search parameters
+            search_params = {
+                "query": query,
+                "search_depth": self.tavily_search_depth,
+                "max_results": self.tavily_max_results,
+            }
+            
+            # Add domain filters if specified
+            if self.tavily_include_domains:
+                search_params["include_domains"] = self.tavily_include_domains
+            if self.tavily_exclude_domains:
+                search_params["exclude_domains"] = self.tavily_exclude_domains
+            
+            # Perform search
+            search_result = self.tavily_client.search(**search_params)
+            
+            # Convert results to LangChain Documents
+            documents = []
+            for result in search_result.get("results", []):
+                content = f"Title: {result.get('title', '')}\nURL: {result.get('url', '')}\nContent: {result.get('content', '')}"
+                metadata = {
+                    "source": "tavily_search",
+                    "url": result.get("url", ""),
+                    "title": result.get("title", ""),
+                    "score": result.get("score", 0),
+                    "published_date": result.get("published_date", ""),
+                }
+                documents.append(Document(page_content=content, metadata=metadata))
+            
+            logger.info(f"Tavily search returned {len(documents)} results")
+            return documents
+            
+        except Exception as e:
+            logger.error(f"Error during Tavily search: {str(e)}")
+            return []
     
     def verify_response(self, claim: str, documents: List[Document]) -> bool:
         """Verify the generated response against source documents using bespoke-minicheck"""
@@ -208,8 +273,17 @@ Claim: {claim}"""
         try:
             attempts = 0
             verification_passed = True
+            
+            # Get documents from vector store
+            vector_documents = self.vector_store.similarity_search(message, k=4)
+            
+            # Get documents from Tavily search if enabled
+            tavily_documents = self.search_tavily(message) if self.enable_tavily_search else []
+            
+            # Combine all documents
+            all_documents = vector_documents + tavily_documents
+            
             # If a model is specified, temporarily use it for this request
-            orig_llm = self.llm
             if model and model != self.model_name:
                 temp_llm = ChatOpenAI(
                     model_name=model,
@@ -217,30 +291,57 @@ Claim: {claim}"""
                     openai_api_base=self.openai_base_url,
                     temperature=1
                 )
-                qa_chain = RetrievalQA.from_chain_type(
-                    llm=temp_llm,
-                    chain_type="stuff",
-                    retriever=self.vector_store.as_retriever(search_kwargs={"k": 4}),
-                    return_source_documents=True
-                )
+                current_llm = temp_llm
             else:
-                qa_chain = self.qa_chain
+                current_llm = self.llm
+            
             while attempts < self.max_regeneration_attempts:
                 attempts += 1
-                # Generate response
-                result = qa_chain({"query": message})
-                response = result["result"]
-                source_documents = result.get("source_documents", [])
+                
+                # Create context from all documents
+                context = ""
+                if all_documents:
+                    context_parts = []
+                    for i, doc in enumerate(all_documents):
+                        source_info = f"[Source {i+1}"
+                        if doc.metadata.get("source") == "tavily_search":
+                            source_info += f" - Web Search: {doc.metadata.get('title', 'Unknown')} ({doc.metadata.get('url', 'No URL')})"
+                        else:
+                            source_info += f" - Knowledge Base: {doc.metadata.get('source', 'Unknown')}"
+                        source_info += "]"
+                        context_parts.append(f"{source_info}\n{doc.page_content}")
+                    context = "\n\n".join(context_parts)
+                
+                # Generate response using the combined context
+                if context:
+                    prompt = f"""Based on the following information, please answer the question. If the information is not sufficient, say so.
+
+Context:
+{context}
+
+Question: {message}
+
+Answer:"""
+                    
+                    response = current_llm.predict(prompt)
+                else:
+                    # No context available, generate response without specific context
+                    response = current_llm.predict(f"Please answer the following question: {message}")
+                
                 # Prepare sources for response
                 sources = []
-                for doc in source_documents:
+                for doc in all_documents:
                     if doc.metadata:
-                        sources.append(str(doc.metadata))
+                        if doc.metadata.get("source") == "tavily_search":
+                            sources.append(f"Web Search: {doc.metadata.get('title', 'Unknown')} ({doc.metadata.get('url', 'No URL')})")
+                        else:
+                            sources.append(str(doc.metadata))
                     else:
                         sources.append(doc.page_content[:100] + "...")
+                
                 # Verify response if enabled
-                if self.enable_verification and source_documents:
-                    verification_passed = self.verify_response(response, source_documents)
+                if self.enable_verification and all_documents:
+                    verification_passed = self.verify_response(response, all_documents)
                     if verification_passed:
                         logger.info(f"Response verified successfully on attempt {attempts}")
                         break
@@ -252,6 +353,7 @@ Claim: {claim}"""
                 else:
                     # No verification needed or no source documents
                     break
+            
             return ChatResponse(
                 response=response, 
                 sources=sources,
@@ -283,7 +385,10 @@ async def health_check():
         "chroma_host": chatbot.chroma_host, 
         "model": chatbot.model_name,
         "verification_enabled": chatbot.enable_verification,
-        "verification_model": chatbot.verification_model if chatbot.enable_verification else None
+        "verification_model": chatbot.verification_model if chatbot.enable_verification else None,
+        "tavily_search_enabled": chatbot.enable_tavily_search,
+        "tavily_search_depth": chatbot.tavily_search_depth if chatbot.enable_tavily_search else None,
+        "tavily_max_results": chatbot.tavily_max_results if chatbot.enable_tavily_search else None
     }
 
 @app.post("/chat", response_model=ChatResponse)
@@ -324,6 +429,19 @@ async def get_verification_status():
         "verification_model": chatbot.verification_model if chatbot.enable_verification else None,
         "verification_base_url": chatbot.verification_base_url if chatbot.enable_verification else None,
         "max_regeneration_attempts": chatbot.max_regeneration_attempts
+    }
+
+@app.get("/tavily/status")
+async def get_tavily_status():
+    if chatbot is None:
+        raise HTTPException(status_code=503, detail="Chatbot not initialized")
+    
+    return {
+        "tavily_search_enabled": chatbot.enable_tavily_search,
+        "tavily_search_depth": chatbot.tavily_search_depth if chatbot.enable_tavily_search else None,
+        "tavily_max_results": chatbot.tavily_max_results if chatbot.enable_tavily_search else None,
+        "tavily_include_domains": chatbot.tavily_include_domains if chatbot.enable_tavily_search else None,
+        "tavily_exclude_domains": chatbot.tavily_exclude_domains if chatbot.enable_tavily_search else None
     }
 
 @app.get("/models")

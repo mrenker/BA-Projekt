@@ -228,6 +228,13 @@ class RAGChatbotUI {
                     this.updateVerificationIndicator(verificationData);
                 }
 
+                // Update Tavily search status
+                const tavilyResponse = await fetch(`${this.apiBase}/tavily/status`);
+                if (tavilyResponse.ok) {
+                    const tavilyData = await tavilyResponse.json();
+                    this.updateTavilyIndicator(tavilyData);
+                }
+
                 // Update document count
                 this.updateDocumentCount();
             }
@@ -270,6 +277,24 @@ class RAGChatbotUI {
             verificationText.textContent = 'Disabled';
             verificationIndicator.className = 'badge bg-warning';
             verificationIndicator.textContent = 'Disabled';
+        }
+    }
+
+    updateTavilyIndicator(data) {
+        const tavilyIcon = document.querySelector('#tavilyStatus i');
+        const tavilyText = document.getElementById('tavilyText');
+        const tavilyIndicator = document.getElementById('tavilyIndicator');
+
+        if (data.tavily_search_enabled) {
+            tavilyIcon.className = 'fas fa-search status-online';
+            tavilyText.textContent = 'Enabled';
+            tavilyIndicator.className = 'badge bg-success';
+            tavilyIndicator.textContent = 'Enabled';
+        } else {
+            tavilyIcon.className = 'fas fa-search status-warning';
+            tavilyText.textContent = 'Disabled';
+            tavilyIndicator.className = 'badge bg-warning';
+            tavilyIndicator.textContent = 'Disabled';
         }
     }
 
