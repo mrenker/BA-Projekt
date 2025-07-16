@@ -136,7 +136,8 @@ class RAGChatbot:
                     max_results=self.tavily_max_results,
                     search_depth=self.tavily_search_depth,
                     include_domains=self.tavily_include_domains if self.tavily_include_domains else None,
-                    exclude_domains=self.tavily_exclude_domains if self.tavily_exclude_domains else None
+                    exclude_domains=self.tavily_exclude_domains if self.tavily_exclude_domains else None,
+                    include_raw_content=True
                 )
                 logger.info(f"Tavily search enabled with depth: {self.tavily_search_depth}, max results: {self.tavily_max_results}")
         else:
@@ -191,7 +192,7 @@ class RAGChatbot:
             # Convert results to LangChain Documents
             documents = []
             for result in search_results:
-                content = f"Title: {result.get('title', '')}\nURL: {result.get('url', '')}\nContent: {result.get('content', '')}"
+                content = f"Title: {result.get('title', '')}\nURL: {result.get('url', '')}\nContent: {result.get('content', '')}\nRaw Content: {result.get('raw_content', '')}"
                 metadata = {
                     "source": "tavily_search",
                     "url": result.get("url", ""),
@@ -307,14 +308,14 @@ Claim: {claim}"""
                 
                 # Generate response using the combined context
                 if context:
-                    prompt = f"""Based on the following information, please answer the question. If the information is not sufficient, say so.
+                    prompt = f"""Basierend auf den folgenden Informationen, beantworte bitte die Frage. Falls die Informationen nicht ausreichen, gib dies an.
 
 Context:
 {context}
 
-Question: {message}
+Frage: {message}
 
-Answer:"""
+Antwort:"""
                     
                     response = current_llm.predict(prompt)
                 else:
