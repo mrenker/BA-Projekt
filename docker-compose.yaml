@@ -41,6 +41,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-dummy}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
       - MODEL_NAME=${MODEL_NAME:-gpt-4.1}
+      - ALLOWED_MODELS=${ALLOWED_MODELS:-gpt-4.1,gpt-4.1-mini}
       
       # ChromaDB Configuration
       - CHROMA_HOST=chroma

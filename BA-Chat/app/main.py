@@ -441,13 +441,20 @@ async def get_tavily_status():
 async def list_models():
     openai_api_key = os.getenv("OPENAI_API_KEY")
     openai_base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    allowed_models_env = os.getenv("ALLOWED_MODELS")
+    allowed_models = [m.strip() for m in allowed_models_env.split(",") if m.strip()] if allowed_models_env else None
     headers = {"Authorization": f"Bearer {openai_api_key}"}
     url = f"{openai_base_url.rstrip('/')}/models"
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, headers=headers, timeout=10)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            # Filter models if allowed_models is set
+            if allowed_models and "data" in data:
+                filtered = [model for model in data["data"] if model.get("id") in allowed_models]
+                data["data"] = filtered
+            return data
     except Exception as e:
         logger.error(f"Error fetching models: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching models: {str(e)}")
